@@ -1,21 +1,3 @@
-// Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
-
-fn parse_number(input: &str) -> Result<i32, &str> {
-    let mut result = String::new();
-
-    for c in input.chars() {
-        if c.is_numeric() {
-            result.push(c);
-        }
-    }
-
-    if result.len() > 0 {
-        return Ok(result.parse::<i32>().unwrap());
-    }
-
-    Err("Not a number")
-}
-
 fn parse_numbers(input: &str) -> Result<Vec<i32>, &str> {
     let mut output: Vec<i32> = vec![];
 
