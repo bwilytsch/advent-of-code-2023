@@ -4,8 +4,8 @@ fn process(input: &str) -> Result<i32, &str> {
     let mut played = vec![1; input.lines().count()];
 
     for (i, line) in input.lines().enumerate() {
-        let result: Vec<&str> = line.split(":").collect();
-        let cards: Vec<&str> = result[1].split("|").collect();
+        let result: Vec<&str> = line.split(':').collect();
+        let cards: Vec<&str> = result[1].split('|').collect();
 
         let winnum: HashSet<i32> = cards
             .first()
