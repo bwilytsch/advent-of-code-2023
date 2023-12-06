@@ -1,86 +1,35 @@
-use std::collections::HashMap;
-
-fn parse_numbers(input: &str) -> Result<Vec<i32>, &str> {
-    let mut output: Vec<i32> = vec![];
-
-    let buffer = input.chars().collect::<Vec<char>>();
-    let mut pointer = 0;
-
-    while pointer < buffer.len() {
-        let c = buffer[pointer];
-
-        if c.is_numeric() {
-            let mut next_char = c;
-            let mut result = String::new();
-            let mut cursor = 0;
-
-            while next_char.is_numeric() {
-                result.push(next_char);
-                cursor += 1;
-
-                if pointer + cursor >= buffer.len() {
-                    break;
-                }
-
-                next_char = buffer[pointer + cursor];
-            }
-
-            output.push(result.parse::<i32>().unwrap());
-
-            pointer += cursor;
-            continue;
-        }
-
-        pointer += 1;
-    }
-
-    Ok(output)
-}
+use std::collections::HashSet;
 
 fn process(input: &str) -> i32 {
-    let mut sum = 0;
-    let mut hm = HashMap::new();
+    let mut played = vec![0; input.lines().count()];
 
-    for line in input.lines() {
+    for (i, line) in input.lines().enumerate() {
         let result: Vec<&str> = line.split(":").collect();
-        let numbers: Vec<&str> = result[1].split("|").collect();
+        let cards: Vec<&str> = result[1].split("|").collect();
+        played[i] += 1;
 
-        let card_id = parse_numbers(result[0]).unwrap()[0];
+        let winnum: HashSet<i32> = cards
+            .first()
+            .unwrap()
+            .split_ascii_whitespace()
+            .map(|x| x.parse::<i32>().unwrap())
+            .collect();
 
-        if let Ok(winning_numbers) = parse_numbers(*numbers.first().unwrap()) {
-            if let Ok(my_numbers) = parse_numbers(*numbers.last().unwrap()) {
-                let filtered_numbers = my_numbers
-                    .iter()
-                    .filter_map(|n| {
-                        if winning_numbers.contains(n) {
-                            return Some(*n);
-                        }
+        let ournum: HashSet<i32> = cards
+            .last()
+            .unwrap()
+            .split_ascii_whitespace()
+            .map(|x| x.parse::<i32>().unwrap())
+            .collect();
 
-                        None
-                    })
-                    .collect::<Vec<i32>>();
+        let winning: Vec<i32> = winnum.intersection(&ournum).copied().collect();
 
-                let cards_won = filtered_numbers.len() as i32;
-                hm.insert(card_id, cards_won);
-            }
+        for w in 0..winning.len() {
+            played[i + w + 1] += played[i]
         }
     }
 
-    let len = hm.len() as i32;
-    let mut queue: Vec<i32> = (1..=len).collect();
-
-    while queue.len() > 0 {
-        if let Some(next_card) = queue.pop() {
-            let cards_won = hm.get(&next_card).unwrap();
-
-            for i in next_card + 1..=next_card + cards_won {
-                queue.push(i);
-            }
-
-            sum += 1;
-        }
-    }
-
+    let sum = played.iter().sum();
     sum
 }
 
