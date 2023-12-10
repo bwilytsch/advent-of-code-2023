@@ -1,0 +1,104 @@
+use indicatif::{ParallelProgressIterator, ProgressIterator};
+use rayon::prelude::*;
+use std::collections::HashMap;
+
+#[derive(Clone, Debug)]
+struct Map {
+    destination: i64,
+    source: i64,
+    range: i64,
+}
+
+fn parse_numbers(input: &str) -> Vec<i64> {
+    input
+        .split_ascii_whitespace()
+        .filter_map(|s| s.parse::<i64>().ok())
+        .collect()
+}
+
+// Find the lowest location number from the seed.
+fn process(input: &str) -> Result<i64, ()> {
+    let lines: Vec<&str> = input
+        .lines()
+        .filter(|l| l.chars().any(char::is_numeric) || l.is_empty())
+        .collect();
+
+    let seed_number_pairs = parse_numbers(lines.first().unwrap());
+
+    let mut seed_numbers: Vec<i64> = vec![];
+
+    println!("Generating seed numbers...");
+
+    for i in (0..seed_number_pairs.len()).progress().step_by(2) {
+        let start = seed_number_pairs[i];
+        let range = seed_number_pairs[i + 1];
+
+        for j in 0..range {
+            seed_numbers.push(start + j);
+        }
+    }
+
+    let mut maps: Vec<Vec<Map>> = vec![];
+
+    println!("Calculating lowest location...");
+
+    for i in (1..lines.len()).progress() {
+        let line = lines[i];
+
+        if line.len() == 0 {
+            maps.push(vec![]);
+        } else {
+            let numbers = parse_numbers(line);
+
+            let destination = numbers[0];
+            let source = numbers[1];
+            let range = numbers[2];
+
+            if let Some(current_map) = maps.last_mut() {
+                current_map.push(Map {
+                    destination,
+                    source,
+                    range,
+                });
+            };
+        }
+    }
+
+    seed_numbers
+        .into_par_iter()
+        .progress()
+        .map(|sn| {
+            let result = maps.clone().into_iter().fold(sn, |mut acc, map| {
+                for m in &map {
+                    if acc >= m.source && acc < m.source + m.range {
+                        acc = acc + m.destination - m.source;
+                        break;
+                    }
+                }
+
+                acc
+            });
+
+            result
+        })
+        .min()
+        .ok_or(())
+}
+
+fn main() {
+    let input = include_str!("./input-1.txt");
+    if let Ok(output) = process(input) {
+        println!("{}", output);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn basic() {
+        let input = include_str!("./test.txt");
+        assert_eq!(process(input).unwrap(), 46);
+    }
+}
