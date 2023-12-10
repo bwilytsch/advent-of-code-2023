@@ -49,9 +49,9 @@ fn process(input: &str) -> Result<u64, ()> {
 
     seed_numbers
         .into_iter()
-        .process()
+        .progress()
         .map(|sn| {
-            maps.clone().into_iter().fold(*sn, |mut acc, map| {
+            maps.clone().into_iter().fold(sn, |mut acc, map| {
                 for m in &map {
                     if acc >= m.source && acc < m.source + m.range {
                         acc = acc + m.destination - m.source;

@@ -1,6 +1,6 @@
-use indicatif::{ParallelProgressIterator, ProgressIterator};
-use rayon::prelude::*;
-use std::collections::HashMap;
+use std::ops::Range;
+
+use indicatif::ProgressIterator;
 
 #[derive(Clone, Debug)]
 struct Map {
@@ -16,6 +16,20 @@ fn parse_numbers(input: &str) -> Vec<i64> {
         .collect()
 }
 
+fn translate(maps: &Vec<Vec<Map>>, from: i64) -> i64 {
+    maps.into_iter().fold(from, |mut acc, map| {
+        for m in map {
+            // This is currently hardcoded
+            if acc >= m.destination && acc < m.destination + m.range {
+                acc = acc - m.destination + m.source;
+                break;
+            }
+        }
+
+        acc
+    })
+}
+
 // Find the lowest location number from the seed.
 fn process(input: &str) -> Result<i64, ()> {
     let lines: Vec<&str> = input
@@ -25,22 +39,19 @@ fn process(input: &str) -> Result<i64, ()> {
 
     let seed_number_pairs = parse_numbers(lines.first().unwrap());
 
-    let mut seed_numbers: Vec<i64> = vec![];
-
     println!("Generating seed numbers...");
 
-    for i in (0..seed_number_pairs.len()).progress().step_by(2) {
-        let start = seed_number_pairs[i];
-        let range = seed_number_pairs[i + 1];
-
-        for j in 0..range {
-            seed_numbers.push(start + j);
-        }
-    }
+    let seed_numbers = seed_number_pairs
+        .chunks(2)
+        .map(|v| Range {
+            start: v[0],
+            end: v[0] + v[1],
+        })
+        .collect::<Vec<_>>();
 
     let mut maps: Vec<Vec<Map>> = vec![];
 
-    println!("Calculating lowest location...");
+    println!("Creating maps...");
 
     for i in (1..lines.len()).progress() {
         let line = lines[i];
@@ -56,33 +67,35 @@ fn process(input: &str) -> Result<i64, ()> {
 
             if let Some(current_map) = maps.last_mut() {
                 current_map.push(Map {
-                    destination,
                     source,
+                    destination,
                     range,
                 });
             };
         }
     }
 
-    seed_numbers
-        .into_par_iter()
-        .progress()
-        .map(|sn| {
-            let result = maps.clone().into_iter().fold(sn, |mut acc, map| {
-                for m in &map {
-                    if acc >= m.source && acc < m.source + m.range {
-                        acc = acc + m.destination - m.source;
-                        break;
-                    }
-                }
+    // This could be highger
+    let mut location = 1_i64;
 
-                acc
-            });
+    // Using reversed maps to speed up the search.
+    // Trying to find the lowest location matchin one of the seed ranges
+    maps.reverse();
 
-            result
-        })
-        .min()
-        .ok_or(())
+    println!("Finding location...");
+
+    'outer: loop {
+        let result = translate(&maps, location);
+        for sr in &seed_numbers {
+            if sr.contains(&result) {
+                break 'outer;
+            }
+        }
+
+        location += 1;
+    }
+
+    Ok(location)
 }
 
 fn main() {
