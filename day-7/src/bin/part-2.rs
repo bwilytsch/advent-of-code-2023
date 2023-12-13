@@ -1,4 +1,3 @@
-use rstest::rstest;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, Ord, PartialEq, PartialOrd, Eq, Hash)]
@@ -164,6 +163,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn sample_input() {
